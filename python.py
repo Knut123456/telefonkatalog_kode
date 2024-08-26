@@ -26,5 +26,23 @@ def utfoermenyvalg (valgtall):
         utfoermenyvalg (nyttforsoek)
 
 def registrerPerson():
-    fornavn
+    fornavn = input ("skriv inn fornavn: ")
+    etternavn = input ("skriv inn etternavn: ")
+    telefonnummer = input ("skriv inn telefonnummer: ")
+
+    nyRegristering = [fornavn, etternavn, telefonnummer]
+    telefonkatalog.append(nyRegristering)
+
+    print ("{0} {1} er registert med telefonnummer {2}"
+           .format (fornavn, etternavn, telefonnummer))
+    input ("Trykk en tast for å gå tilbake til meny")
+    printMeny()
+
+def visallePersonar():
+    if not telefonkatalog:
+        print("det er ingen registerte personer i katalogen")
+        input ("Trykk en tast for å gå tilbake til meny")
+        printMeny()
+    else:
+        print
 
