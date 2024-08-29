@@ -3,53 +3,50 @@ import json
 
 import sqlite3
 
-conn = sqlite3.connect("telefonkatalog.db")
+conn = sqlite3.connect("telefonkatolog.db")
 
 cursor = conn.cursor()
 
-cursor.execute (''' CREATE TABLE IF NOT EXITS personer(
-                fornavn TEXT,
-                etternavn TEXT,
-                telefonnummer TEXT)''')
+cursor.execute(""" CREATE TABLE IF NOT EXISTS personer (
+               fornavn TEXT,
+               etternavn TEXT,
+               telefonnummer TEXT
+               )""")
+
 conn.commit()
-
-fil ="telefondata.json"
-
-def save_to_file ():
-    with open (fil, "w") as file:
-        json.dump(telefonkatalog, file)
-
-
-def load_from_file():
-    if os.path.exists(fil):  # Check if the file exists
-        if os.path.getsize(fil) > 0:  # Check if the file is not empty
-            with open(fil, "r") as file:
-                try:
-                    global telefonkatalog
-                    telefonkatalog = json.load(file)  # Load JSON data into the list5
-                    #print("Data loaded successfully from", fil)
-                except json.JSONDecodeError:
-                    print("Error: The file contains invalid JSON. Initializing an empty telefonkatalog.")
-                    telefonkatalog = []
-        else:
-            print("The file is empty. Initializing an empty telefonkatalog.")
-            telefonkatalog = []
-    else:
-        print(fil, "doesn't exist. Initializing an empty telefonkatalog.")
-        telefonkatalog = []
-
-        
-def exit_programm():
-    save_to_file()
-    print("data saved. exiting...")
-    exit()
 
 
 telefonkatalog = [] #listeformat ["fornavn", "etternavn" , "telephonnummer"]
 
-load_from_file()
+def visallePersonar():
+    cursor.execute("SELECT * FROM personer")
+    resultater = cursor.fetchall()
+    if not resultater:
+        print("det er ingen registerte personer i katalogen")
+        input ("Trykk en tast for å gå tilbake til meny: ")
+        printMeny()
+    else:
+        print ("************************************"
+               "************************************")
+        for personer in resultater:
+            print ("* Fornavn : {:15s} Etternavn: {:15s} Telefonnummer: {:8s} *"
+                   .format (personer[0], personer[1], personer[2]))
+            print ("************************************"
+                   "************************************")
+        
+        input ("Trykk en tast for å gå tilbake til meny: ")
+        printMeny()
 
-#print(telefonkatalog,  "fungerer")
+def legg_til_person_i_db(fornavn, etternavn, telefonnummer):
+    cursor.execute("INSERT INTO personer (fornavn, etternavn, telefonnummer) VALUES (?, ?, ?)", 
+                   (fornavn, etternavn, telefonnummer))
+    conn.commit()
+
+
+def slett_person_fra_db(fornavn, etternavn, telefonnummer):
+    cursor.execute("DELETE FROM personer WHERE fornavn=? AND etternavn=? AND telefonnummer=?", 
+                   (fornavn, etternavn, telefonnummer))
+    conn.commit()
 
 def printMeny ():
     print ("---------------------- Telefonkatalog ----------------------")
@@ -75,7 +72,7 @@ def utfoermenyvalg (valgtall):
     elif valgtall == "5":
         bekreftelse = input ("Er du sikker på at du vil avslutte? J/N  ")
         if (bekreftelse =="j" or bekreftelse =="j"): # skjekker bare fo ja
-          exit_programm()
+            exit()
     else:
         nyttforsoek = input ("Ulydig valg. velg en tall mellom 1-5: ")
         utfoermenyvalg (nyttforsoek)
@@ -84,37 +81,19 @@ def registrerPerson():
     fornavn = input ("skriv inn fornavn: ")
     etternavn = input ("skriv inn etternavn: ")
     telefonnummer = input ("skriv inn telefonnummer: ")
-
-    nyRegristering = [fornavn, etternavn, telefonnummer]
-    telefonkatalog.append(nyRegristering)
-    save_to_file ()
-
+    
+    legg_til_person_i_db(fornavn, etternavn, telefonnummer)
+    
     print ("{0} {1} er registert med telefonnummer {2}"
            .format (fornavn, etternavn, telefonnummer))
     input ("Trykk en tast for å gå tilbake til meny: ")
     printMeny()
 
-def visallePersonar():
-    load_from_file()
-    if not telefonkatalog:
-        print("det er ingen registerte personer i katalogen")
-        input ("Trykk en tast for å gå tilbake til meny: ")
-        printMeny()
-    else:
-        #print("test ", telefonkatalog)
-        print ("************************************"
-               "************************************")
-        for personer in telefonkatalog:
-            print ("* Fornavn : {:15s} Etternavn: {:15s} Telefonnummer: {:8s} *"
-                   .format (personer[0], personer[1], personer[2]))
-            print ("************************************"
-                   "************************************")
-        
-        input ("Trykk en tast for å gå tilbake til meny: ")
-        printMeny()
+
+
+
 
 def sokPerson ():
-    #load_from_file()
     if not telefonkatalog:
         print("det er ingen registerte personer i katalogen")
         printMeny()
@@ -141,25 +120,22 @@ def sokPerson ():
 
 # typesok angir om man søker på fornavn, etternavn eller telefonnummer
 def finnperson (typesok, sokeTekst):
-    #load_from_file()
-    svar =[]
-    for personer in telefonkatalog:
-        if typesok == "fornavn":
-            if personer [0] == sokeTekst:
-                svar.append(personer)
-        elif typesok == "etternavn":
-            if personer [1] == sokeTekst:
-                svar.append(personer)
-        elif typesok == "telefonnummer":
-            if personer [2] == sokeTekst:
-               svar.append(personer)
+
+    if typesok == "fornavn":
+        cursor.execute("SELECT * FROM personer WHERE fornavn=?", (sokeTekst,))
+    elif typesok == "etternavn":
+        cursor.execute("SELECT * FROM personer WHERE etternavn=?", (sokeTekst,))
+    elif typesok == "telefonnummer":
+        cursor.execute("SELECT * FROM personer WHERE telefonnummer=? ", (sokeTekst,))
+
+    resultater = cursor.fetchall()
     
-    if not svar:
+    if not resultater:
         print("finner ingen personer")
         input ("Trykk en tast for å gå tilbake til meny: ")
         sokPerson()
     else:
-        for personer in svar:
+        for personer in resultater:
             print ("{0} {1} har telefonnnummer {2}"
                    .format(personer[0], personer [1], personer [2]))
                 
@@ -185,10 +161,16 @@ def utfoerInnstilingervalg (valgtall):
         utfoerInnstilingervalg (nyttforsoek)
 
 def slette_oppføring():
+    fornavn = input("skriv inn fornavn til person du vil slette: ")
+    etternavn = input ("skriv inn etternavn til person du vil slette: ")
+    telefonnummer = input ("skriv inn telefonnummer til person du vil slette: ")
+
     slett = input ("Vil du slette oppføringen J/N: ")
     if slett == "J" or "j":
-        with open (fil, "w") as file:
-            file.write("") # clear the info on the json file
+        
+        slett_person_fra_db(fornavn, etternavn, telefonnummer)
+        print(f"{fornavn} {etternavn} er slettet fra katalogen")
+
     if slett == "N" or "n":
         Innstilinger ()
     else:
